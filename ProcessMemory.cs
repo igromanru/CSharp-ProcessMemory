@@ -72,6 +72,17 @@ namespace IgroGadgets
             return readInt;
         }
 
+        public float ReadMemoryFloat(int readAddress)
+        {
+            float readFloat = -1f;
+            byte[] readBuffer = new byte[sizeof(int)];
+            if (ReadMemory(readAddress, ref readBuffer))
+            {
+                readFloat = BitConverter.ToSingle(readBuffer, 0);
+            }
+            return readFloat;
+        }
+
         public bool WriteMemory(int writeAddress, byte[] writeBuffer)
         {
             return WriteProcessMemory(handleProcess, writeAddress, writeBuffer, writeBuffer.Length, IntPtr.Zero);
@@ -81,7 +92,13 @@ namespace IgroGadgets
         {
             byte[] write = BitConverter.GetBytes(writeInt);
             return WriteMemory(writeAddress, write);
-        }  
+        }
+
+        public bool WriteMemoryFloat(int writeAddress, float writeFloat)
+        {
+            byte[] write = BitConverter.GetBytes(writeFloat);
+            return WriteMemory(writeAddress, write);
+        }
 
         // The pointer offets array have to looks like this: { 0xFB3E3C, 0x60, 0x8,...}
         // First offset makes the base address: 0x400000 + 0xFB3E3C = 0x13B3E3C

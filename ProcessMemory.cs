@@ -29,20 +29,21 @@ namespace IgroGadgets
         } 
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+        public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private extern bool ReadProcessMemory(IntPtr hProcess, int lpBaseAddress, ref byte[] lpBuffer, int dwSize, out int lpNumberOfBytesRead);
+        public static extern bool ReadProcessMemory(IntPtr hProcess, int lpBaseAddress, byte[] lpBuffer, int dwSize, IntPtr lpNumberOfBytesRead);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private extern bool WriteProcessMemory(IntPtr hProcess, int lpBaseAddress, byte[] lpBuffer, int dwSize, out int lpNumberOfBytesWritten);
+        public static extern bool WriteProcessMemory(IntPtr hProcess, int lpBaseAddress, byte[] lpBuffer, int dwSize, IntPtr lpNumberOfBytesWritten);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private extern bool CloseHandle(IntPtr handle);
+        public static extern bool CloseHandle(IntPtr handle);
 
         private IntPtr handleProcess;
+        private string p;
 
-        ProcessMemory(String processName)
+        public ProcessMemory(String processName)
         {
             Process.EnterDebugMode();
             OpenProcessByName(processName);
@@ -57,8 +58,7 @@ namespace IgroGadgets
 
         public bool ReadMemory(int readAddress, ref byte[] readBuffer)
         {
-            int bytesRead;
-            return ReadProcessMemory(handleProcess, readAddress, ref readBuffer, readBuffer.Length, out bytesRead);
+            return ReadProcessMemory(handleProcess, readAddress, readBuffer, readBuffer.Length, IntPtr.Zero);
         }
 
         public int ReadMemoryInt(int readAddress)
@@ -74,8 +74,7 @@ namespace IgroGadgets
 
         public bool WriteMemory(int writeAddress, byte[] writeBuffer)
         {
-            int bytesWritten;
-            return WriteProcessMemory(handleProcess, writeAddress, writeBuffer, writeBuffer.Length, out bytesWritten);
+            return WriteProcessMemory(handleProcess, writeAddress, writeBuffer, writeBuffer.Length, IntPtr.Zero);
         }
 
         public bool WriteMemoryInt(int writeAddress, int writeInt)
@@ -86,12 +85,16 @@ namespace IgroGadgets
 
         // The pointer offets array have to looks like this: { 0xFB3E3C, 0x60, 0x8,...}
         // First offset makes the base address: 0x400000 + 0xFB3E3C = 0x13B3E3C
-        public int ReadPointer(int startAddress, int[] pointerOffsets)
+        public int ReadPointer(int startAddress, int[] offsets)
         {
             int pointedAddress = startAddress;
-            foreach(int offset in pointerOffsets)
+            for (int i = 0; i < offsets.Length; i++)
             {
-                if ((pointedAddress = ReadMemoryInt(pointedAddress + offset)) == -1)
+                if (i == offsets.Length - 1)
+                {
+                    pointedAddress += offsets[i];
+                }
+                else if ((pointedAddress = ReadMemoryInt(pointedAddress + offsets[i])) == -1)
                 {
                     pointedAddress = 0;
                     break;
@@ -102,6 +105,7 @@ namespace IgroGadgets
 
         public void Close()
         {
+            Process.LeaveDebugMode();
             if(handleProcess != null)
             {
                 CloseHandle(handleProcess);

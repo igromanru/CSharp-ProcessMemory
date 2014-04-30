@@ -41,7 +41,6 @@ namespace IgroGadgets
         public static extern bool CloseHandle(IntPtr handle);
 
         private IntPtr handleProcess;
-        private string p;
 
         public ProcessMemory(String processName)
         {

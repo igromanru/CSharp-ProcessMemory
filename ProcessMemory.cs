@@ -62,6 +62,17 @@ namespace IgroGadgets
             return ReadProcessMemory(handleProcess, readAddress, readBuffer, readBuffer.Length, IntPtr.Zero);
         }
 
+        public int ReadMemoryByte(int readAddress)
+        {
+            int readInt = -1;
+            byte[] readBuffer = new byte[sizeof(int)];
+            if (ReadProcessMemory(handleProcess, readAddress, readBuffer, 1, IntPtr.Zero))
+            {
+                readInt = BitConverter.ToInt32(readBuffer, 0);
+            }
+            return readInt;
+        }
+
         public int ReadMemoryInt(int readAddress)
         {
             int readInt = -1;
@@ -87,6 +98,17 @@ namespace IgroGadgets
         public bool WriteMemory(int writeAddress, byte[] writeBuffer)
         {
             return WriteProcessMemory(handleProcess, writeAddress, writeBuffer, writeBuffer.Length, IntPtr.Zero);
+        }
+
+        public bool WriteMemoryByte(int writeAddress, int writeByte)
+        {
+            bool result = writeByte < 256;
+            byte[] write = BitConverter.GetBytes(writeByte);
+            if (result && WriteProcessMemory(handleProcess, writeAddress, write, 1, IntPtr.Zero))
+            {
+                result = true;
+            }
+            return result;
         }
 
         public bool WriteMemoryInt(int writeAddress, int writeInt)

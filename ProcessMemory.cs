@@ -9,6 +9,8 @@ namespace IgroGadgets
 {
     public class ProcessMemory
     {
+        public const int DEFAULT_START_ADDRESS = 0x400000;
+
         enum ProcessAccessType
         {
             PROCESS_ALL_ACCESS = PROCESS_CREATE_PROCESS | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE | PROCESS_QUERY_INFORMATION |

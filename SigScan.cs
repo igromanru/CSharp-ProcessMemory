@@ -41,7 +41,7 @@ using Microsoft.Win32.SafeHandles;
 //      IntPtr pAddr = _sigScan.FindPattern(new byte[]{ 0xFF, 0xFF, 0xFF, 0xFF, 0x51, 0x55, 0xFC, 0x11 }, "xxxx?xx?", 12);
 //
 // ----------------------------------------------------------------------------------------
-namespace SigScan.Classes
+namespace IgroGadgets
 {
     public class SigScan
     {
@@ -164,7 +164,7 @@ namespace SigScan.Classes
                     return false;
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }
@@ -240,7 +240,7 @@ namespace SigScan.Classes
                 // Pattern was not found.
                 return IntPtr.Zero;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return IntPtr.Zero;
             }

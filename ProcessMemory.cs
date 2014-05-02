@@ -34,10 +34,10 @@ namespace IgroGadgets
         public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool ReadProcessMemory(IntPtr hProcess, int lpBaseAddress, byte[] lpBuffer, int dwSize, IntPtr lpNumberOfBytesRead);
+        public static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, int dwSize, IntPtr lpNumberOfBytesRead);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool WriteProcessMemory(IntPtr hProcess, int lpBaseAddress, byte[] lpBuffer, int dwSize, IntPtr lpNumberOfBytesWritten);
+        public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, int dwSize, IntPtr lpNumberOfBytesWritten);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool CloseHandle(IntPtr handle);
@@ -57,12 +57,12 @@ namespace IgroGadgets
             return handleProcess;
         }
 
-        public bool ReadMemory(int readAddress, ref byte[] readBuffer)
+        public bool ReadMemory(IntPtr readAddress, ref byte[] readBuffer)
         {
             return ReadProcessMemory(handleProcess, readAddress, readBuffer, readBuffer.Length, IntPtr.Zero);
         }
 
-        public int ReadMemoryByte(int readAddress)
+        public int ReadMemoryByte(IntPtr readAddress)
         {
             int readInt = -1;
             byte[] readBuffer = new byte[sizeof(int)];
@@ -73,7 +73,7 @@ namespace IgroGadgets
             return readInt;
         }
 
-        public int ReadMemoryInt(int readAddress)
+        public int ReadMemoryInt(IntPtr readAddress)
         {
             int readInt = -1;
             byte[] readBuffer = new byte[sizeof(int)];
@@ -84,7 +84,7 @@ namespace IgroGadgets
             return readInt;
         }
 
-        public float ReadMemoryFloat(int readAddress)
+        public float ReadMemoryFloat(IntPtr readAddress)
         {
             float readFloat = -1f;
             byte[] readBuffer = new byte[sizeof(int)];
@@ -95,12 +95,12 @@ namespace IgroGadgets
             return readFloat;
         }
 
-        public bool WriteMemory(int writeAddress, byte[] writeBuffer)
+        public bool WriteMemory(IntPtr writeAddress, byte[] writeBuffer)
         {
             return WriteProcessMemory(handleProcess, writeAddress, writeBuffer, writeBuffer.Length, IntPtr.Zero);
         }
 
-        public bool WriteMemoryByte(int writeAddress, int writeByte)
+        public bool WriteMemoryByte(IntPtr writeAddress, int writeByte)
         {
             bool result = writeByte < 256;
             byte[] write = BitConverter.GetBytes(writeByte);
@@ -111,13 +111,13 @@ namespace IgroGadgets
             return result;
         }
 
-        public bool WriteMemoryInt(int writeAddress, int writeInt)
+        public bool WriteMemoryInt(IntPtr writeAddress, int writeInt)
         {
             byte[] write = BitConverter.GetBytes(writeInt);
             return WriteMemory(writeAddress, write);
         }
 
-        public bool WriteMemoryFloat(int writeAddress, float writeFloat)
+        public bool WriteMemoryFloat(IntPtr writeAddress, float writeFloat)
         {
             byte[] write = BitConverter.GetBytes(writeFloat);
             return WriteMemory(writeAddress, write);
@@ -125,7 +125,7 @@ namespace IgroGadgets
 
         // The pointer offets array have to looks like this: { 0xFB3E3C, 0x60, 0x8,...}
         // First offset makes the base address: 0x400000 + 0xFB3E3C = 0x13B3E3C
-        public int ReadPointer(int startAddress, int[] offsets)
+        public IntPtr ReadPointer(int startAddress, int[] offsets)
         {
             int pointedAddress = startAddress;
             for (int i = 0; i < offsets.Length; i++)
@@ -134,13 +134,13 @@ namespace IgroGadgets
                 {
                     pointedAddress += offsets[i];
                 }
-                else if ((pointedAddress = ReadMemoryInt(pointedAddress + offsets[i])) == -1)
+                else if ((pointedAddress = ReadMemoryInt(new IntPtr(pointedAddress + offsets[i]))) == -1)
                 {
                     pointedAddress = 0;
                     break;
                 }
             }            
-            return pointedAddress;
+            return new IntPtr(pointedAddress);
         }
 
         public void Close()

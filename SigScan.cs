@@ -43,6 +43,31 @@ using Microsoft.Win32.SafeHandles;
 // ----------------------------------------------------------------------------------------
 namespace IgroGadgets
 {
+    public class SignatureHolder
+    {
+        public int StartAddress { get; set; }
+        public int SearchRange { get; set; }
+        public byte[] WantedBytes { get; set; }
+        public String Mask { get; set; }
+        public int AddressOffset { get; set; }
+
+        public SignatureHolder(int startSAddress, int searchRange, byte[] wantedBytes, String mask, int addressOffset)
+        {
+            StartAddress = startSAddress;
+            SearchRange = searchRange;
+            WantedBytes = wantedBytes;
+            Mask = mask;
+            AddressOffset = addressOffset;
+        }
+
+        public IntPtr ScanSignature(Process process)
+        {
+            SigScan sigScan = new SigScan(process, new IntPtr(StartAddress), SearchRange);
+            return sigScan.FindPattern(WantedBytes, Mask, AddressOffset);
+        }
+    }
+
+
     public class SigScan
     {
         /// <summary>

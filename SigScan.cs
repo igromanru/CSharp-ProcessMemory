@@ -43,7 +43,7 @@ using Microsoft.Win32.SafeHandles;
 // ----------------------------------------------------------------------------------------
 namespace IgroGadgets
 {
-    public class SignatureHolder
+    public class SignatureEntity
     {
         public int StartAddress { get; set; }
         public int SearchRange { get; set; }
@@ -51,7 +51,7 @@ namespace IgroGadgets
         public String Mask { get; set; }
         public int AddressOffset { get; set; }
 
-        public SignatureHolder(int startSAddress, int searchRange, byte[] wantedBytes, String mask, int addressOffset)
+        public SignatureEntity(int startSAddress, int searchRange, byte[] wantedBytes, String mask, int addressOffset)
         {
             StartAddress = startSAddress;
             SearchRange = searchRange;

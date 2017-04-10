@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using Microsoft.Win32.SafeHandles;
 
 //
 // sigScan C# Implementation - Written by atom0s [aka Wiccaan]
@@ -41,7 +37,7 @@ using Microsoft.Win32.SafeHandles;
 //      IntPtr pAddr = _sigScan.FindPattern(new byte[]{ 0xFF, 0xFF, 0xFF, 0xFF, 0x51, 0x55, 0xFC, 0x11 }, "xxxx?xx?", 12);
 //
 // ----------------------------------------------------------------------------------------
-namespace IgroGadgets
+namespace IgroGadgets.Memory
 {
     public class SignatureEntity
     {

@@ -2,11 +2,10 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace IgroGadgets
+namespace IgroGadgets.Memory
 {
-    public class ProcessMemory
+    public class ProcessMemory : IDisposable
     {
-        public const int DEFAULT_START_ADDRESS = 0x400000;
 
         enum ProcessAccessType
         {
@@ -41,17 +40,33 @@ namespace IgroGadgets
 
         private IntPtr _handleProcess;
 
+        public IntPtr BaseAddress { get; private set; }
+
         public ProcessMemory(string processName)
         {
-            Process.EnterDebugMode();
+            try
+            {
+                Process.EnterDebugMode();
+            }
+            catch (Exception)
+            {
+                throw new NoAdminPrivilegesException();
+            }
             OpenProcessByName(processName);
         }
 
-        public IntPtr OpenProcessByName(string processName)
+        private void OpenProcessByName(string processName)
         {
-            Process process = Process.GetProcessesByName(processName)[0];
-            _handleProcess = OpenProcess((int)ProcessAccessType.PROCESS_ALL_ACCESS, false, process.Id);
-            return _handleProcess;
+            Process[] processes = Process.GetProcessesByName(processName);
+            if (processes.Length > 0)
+            {
+                BaseAddress = processes[0].MainModule.BaseAddress;
+                _handleProcess = OpenProcess((int)ProcessAccessType.PROCESS_ALL_ACCESS, false, processes[0].Id);
+            }
+            else
+            {
+                throw new NoProcessFoundException();
+            }
         }
 
         public bool ReadMemory(IntPtr readAddress, ref byte[] readBuffer)
@@ -70,26 +85,15 @@ namespace IgroGadgets
             return result;
         }
 
-        public IntPtr ReadMemoryIntPtr(IntPtr address)
-        {   
-            var result = IntPtr.Zero;
-            var readBuffer = new byte[IntPtr.Size];
-            if (ReadMemory(address, ref readBuffer))
-            {
-                Marshal.Copy(readBuffer, 0, result, readBuffer.Length);
-            }
-            return result;
-        }
-
         public int ReadMemoryInt(IntPtr address)
         {
-            var readInt = -1;
+            var result = -1;
             var readBuffer = new byte[sizeof(int)];
             if (ReadMemory(address, ref readBuffer))
             {
-                readInt = BitConverter.ToInt32(readBuffer, 0);
+                result = BitConverter.ToInt32(readBuffer, 0);
             }
-            return readInt;
+            return result;
         }
 
         public long ReadMemoryLong(IntPtr address)
@@ -119,9 +123,9 @@ namespace IgroGadgets
             return WriteProcessMemory(_handleProcess, writeAddress, writeBuffer, (UIntPtr)writeBuffer.Length, UIntPtr.Zero);
         }
 
-        public bool WriteMemoryByte(IntPtr address, int value)
+        public bool WriteMemoryByte(IntPtr address, byte value)
         {
-            return value < 256 && WriteProcessMemory(_handleProcess, address, BitConverter.GetBytes(value), (UIntPtr)1, UIntPtr.Zero);
+            return WriteProcessMemory(_handleProcess, address, BitConverter.GetBytes(value), (UIntPtr)1, UIntPtr.Zero);
         }
 
         public bool WriteMemoryInt(IntPtr address, int value)
@@ -143,31 +147,55 @@ namespace IgroGadgets
         // First offset makes the base address: 0x400000 + 0xFB3E3C = 0x13B3E3C
         public IntPtr ReadPointer(IntPtr address, int[] offsets)
         {
+            var startAdsress = ReadMemoryInt(address);
             for (var i = 0; i < offsets.Length; i++)
             {
-                if (i == offsets.Length - 1)
+                if (i < offsets.Length - 1)
                 {
-                    address = IntPtr.Add(address, offsets[i]);
-                }
-                else
-                {
-                    address = ReadMemoryIntPtr(IntPtr.Add(address, offsets[i]));
-                    if (address.Equals(IntPtr.Zero))
+                    startAdsress = ReadMemoryInt(new IntPtr(startAdsress + offsets[i]));
+                    if (startAdsress == -1)
                     {
                         break;
                     }
+
                 }
-            }            
-            return address;
+                else
+                {
+                    startAdsress += offsets[i];
+                }
+            }
+            return new IntPtr(startAdsress);
         }
 
-        public void Close()
+        public IntPtr ReadPointer64(IntPtr address, int[] offsets)
+        {
+            long startAdsress = ReadMemoryLong(address);
+            for (var i = 0; i < offsets.Length; i++)
+            {
+                if (i < offsets.Length - 1)
+                {
+                    startAdsress = ReadMemoryLong(new IntPtr(startAdsress + offsets[i]));
+                    if (startAdsress == -1)
+                    {
+                        break;
+                    }
+                    
+                }
+                else
+                {
+                    startAdsress += offsets[i];
+                }
+            }
+            return new IntPtr(startAdsress);
+        }
+
+        public void Dispose()
         {
             Process.LeaveDebugMode();
-            if(!_handleProcess.Equals(IntPtr.Zero))
+            if (!_handleProcess.Equals(IntPtr.Zero))
             {
                 CloseHandle(_handleProcess);
-            }            
+            }
         }
     }
 }

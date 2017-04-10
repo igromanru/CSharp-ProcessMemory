@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace IgroGadgets
+namespace IgroGadgets.Memory
 {
     public class AddressEntity<T>
     {

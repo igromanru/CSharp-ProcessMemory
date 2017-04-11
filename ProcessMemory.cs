@@ -41,8 +41,6 @@ namespace IgroGadgets.Memory
         public static bool Is64Bit => IntPtr.Size == 8;
 
         private IntPtr _handleProcess;
-
-        public IntPtr BaseAddress { get; private set; }
         
         public ProcessMemory(string processName)
         {
@@ -68,7 +66,6 @@ namespace IgroGadgets.Memory
             {
                 Process[] processes = Process.GetProcessesByName(processName);
                 _handleProcess = OpenProcess((int)ProcessAccessType.PROCESS_ALL_ACCESS, false, processes[0].Id);
-                InitBaseAddress(processes[0]);
             }
             catch (Exception e)
             {
@@ -76,21 +73,6 @@ namespace IgroGadgets.Memory
                 throw new NoProcessFoundException();
             }
         }
-
-        private void InitBaseAddress(Process process)
-        {
-            try
-            {
-                BaseAddress = process.MainModule.BaseAddress;
-
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
-        }
-
-
 
         public bool ReadMemory(IntPtr readAddress, ref byte[] readBuffer)
         {

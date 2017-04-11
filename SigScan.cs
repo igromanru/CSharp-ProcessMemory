@@ -254,7 +254,7 @@ namespace IgroGadgets.Memory
                     if (this.MaskCheck(x, btPattern, strMask))
                     {
                         // The pattern was found, return it.
-                        return new IntPtr((int)this.m_vAddress + (x + nOffset));
+                        return IntPtr.Add(this.m_vAddress, x + nOffset);
                     }
                 }
 

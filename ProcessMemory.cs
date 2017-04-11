@@ -41,7 +41,9 @@ namespace IgroGadgets.Memory
         public static bool Is64Bit => IntPtr.Size == 8;
 
         private IntPtr _handleProcess;
-        
+
+        public Process Process { get; private set; }
+
         public ProcessMemory(string processName)
         {
             try
@@ -65,7 +67,8 @@ namespace IgroGadgets.Memory
             try
             {
                 Process[] processes = Process.GetProcessesByName(processName);
-                _handleProcess = OpenProcess((int)ProcessAccessType.PROCESS_ALL_ACCESS, false, processes[0].Id);
+                Process = processes[0];
+                _handleProcess = OpenProcess((int)ProcessAccessType.PROCESS_ALL_ACCESS, false, Process.Id);
             }
             catch (Exception e)
             {

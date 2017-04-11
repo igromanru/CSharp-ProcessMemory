@@ -24,7 +24,7 @@ namespace IgroGadgets.Memory
             PROCESS_VM_OPERATION = 0x0008,
             PROCESS_VM_READ = 0x0010,
             PROCESS_VM_WRITE = 0x0020
-        } 
+        }
 
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
@@ -37,6 +37,8 @@ namespace IgroGadgets.Memory
 
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool CloseHandle(IntPtr handle);
+
+        public static bool Is64Bit => IntPtr.Size == 8;
 
         private IntPtr _handleProcess;
 
@@ -143,43 +145,48 @@ namespace IgroGadgets.Memory
             return WriteMemory(address, BitConverter.GetBytes(value));
         }
 
-        // The pointer offets array have to looks like this: { 0xFB3E3C, 0x60, 0x8,...}
-        // First offset makes the base address: 0x400000 + 0xFB3E3C = 0x13B3E3C
-        public IntPtr ReadPointer(IntPtr address, int[] offsets)
+        /// <summary>
+        /// ReadPointer wrapper to accept long as address 
+        /// </summary>
+        /// <param name="address">base address</param>
+        /// <param name="offsets">offsest array</param>
+        /// <returns>The address that is pointed to by the pointer.</returns>
+        public IntPtr ReadPointer(int address, int[] offsets)
         {
-            var startAdsress = ReadMemoryInt(address);
-            for (var i = 0; i < offsets.Length; i++)
-            {
-                if (i < offsets.Length - 1)
-                {
-                    startAdsress = ReadMemoryInt(new IntPtr(startAdsress + offsets[i]));
-                    if (startAdsress == -1)
-                    {
-                        break;
-                    }
-
-                }
-                else
-                {
-                    startAdsress += offsets[i];
-                }
-            }
-            return new IntPtr(startAdsress);
+            return ReadPointer(new IntPtr(address), offsets);
         }
 
-        public IntPtr ReadPointer64(IntPtr address, int[] offsets)
+        /// <summary>
+        /// ReadPointer wrapper to accept long as address 
+        /// </summary>
+        /// <param name="address">base address</param>
+        /// <param name="offsets">offsest array</param>
+        /// <returns>The address that is pointed to by the pointer.</returns>
+        public IntPtr ReadPointer(long address, int[] offsets)
         {
-            long startAdsress = ReadMemoryLong(address);
+            return ReadPointer(new IntPtr(address), offsets);
+        }
+
+        /// <summary>
+        /// Reading the address from a pointer
+        /// </summary>
+        /// <param name="address">base address</param>
+        /// <param name="offsets">offsest array</param>
+        /// <returns>The address that is pointed to by the pointer.</returns>
+        public IntPtr ReadPointer(IntPtr address, int[] offsets)
+        {
+            var startAdsress = Is64Bit ? ReadMemoryLong(address) : ReadMemoryInt(address);
             for (var i = 0; i < offsets.Length; i++)
             {
                 if (i < offsets.Length - 1)
                 {
-                    startAdsress = ReadMemoryLong(new IntPtr(startAdsress + offsets[i]));
+                    startAdsress = Is64Bit ? ReadMemoryLong(new IntPtr(startAdsress + offsets[i]))
+                                            : ReadMemoryInt(new IntPtr(startAdsress + offsets[i]));
                     if (startAdsress == -1)
                     {
                         break;
                     }
-                    
+
                 }
                 else
                 {

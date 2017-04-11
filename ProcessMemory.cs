@@ -129,12 +129,17 @@ namespace IgroGadgets.Memory
             return success;
         }
 
-        public IntPtr ReadMemoryIntPr(IntPtr address)
+        public bool ReadMemoryIntPr(IntPtr address, out IntPtr value)
         {
-            int intValue = 0;
             long longValue = 0;
-            bool read = Is64Bit ? ReadMemoryLong(address,out longValue) : ReadMemoryInt(address, out intValue);
-            return new IntPtr(Is64Bit ? longValue : intValue);
+            int intValue = 0;
+            var result = Is64Bit ? ReadMemoryLong(address, out longValue) : ReadMemoryInt(address, out intValue);
+            value = IntPtr.Zero;
+            if (result)
+            {
+                value = new IntPtr(Is64Bit ? longValue : intValue);
+            }
+            return result;
         }
 
         public bool WriteMemory(IntPtr writeAddress, byte[] writeBuffer)
@@ -163,25 +168,15 @@ namespace IgroGadgets.Memory
         }
 
         /// <summary>
-        /// ReadPointer wrapper to accept long as address 
+        /// Reading the address from a pointer
         /// </summary>
         /// <param name="address">base address</param>
         /// <param name="offsets">offsest array</param>
-        /// <returns>The address that is pointed to by the pointer.</returns>
-        public IntPtr ReadPointer(int address, int[] offsets)
+        /// <param name="resultAddress">>The address that is pointed to by the pointer.</param>
+        /// <returns>True, if reading was successful</returns>
+        public bool ReadPointer(int address, int[] offsets, out IntPtr resultAddress)
         {
-            return ReadPointer(new IntPtr(address), offsets);
-        }
-
-        /// <summary>
-        /// ReadPointer wrapper to accept long as address 
-        /// </summary>
-        /// <param name="address">base address</param>
-        /// <param name="offsets">offsest array</param>
-        /// <returns>The address that is pointed to by the pointer.</returns>
-        public IntPtr ReadPointer(long address, int[] offsets)
-        {
-            return ReadPointer(new IntPtr(address), offsets);
+            return ReadPointer(new IntPtr(address), offsets, out resultAddress);
         }
 
         /// <summary>
@@ -189,26 +184,43 @@ namespace IgroGadgets.Memory
         /// </summary>
         /// <param name="address">base address</param>
         /// <param name="offsets">offsest array</param>
-        /// <returns>The address that is pointed to by the pointer.</returns>
-        public IntPtr ReadPointer(IntPtr address, int[] offsets)
+        /// <param name="resultAddress">>The address that is pointed to by the pointer.</param>
+        /// <returns>True, if reading was successful</returns>
+        public bool ReadPointer(long address, int[] offsets, out IntPtr resultAddress)
         {
-            var resultAddress = ReadMemoryIntPr(address);
-            for (var i = 0; i < offsets.Length; i++)
+            return ReadPointer(new IntPtr(address), offsets, out resultAddress);
+        }
+
+        /// <summary>
+        /// Reading the address from a pointer
+        /// </summary>
+        /// <param name="address">base address</param>
+        /// <param name="offsets">offsest array</param>
+        /// <param name="resultAddress">>The address that is pointed to by the pointer.</param>
+        /// <returns>True, if reading was successful</returns>
+        public bool ReadPointer(IntPtr address, int[] offsets, out IntPtr resultAddress)
+        {
+            var result = true;
+            resultAddress = IntPtr.Zero;
+            if (ReadMemoryIntPr(address, out resultAddress))
             {
-                if (i < offsets.Length - 1)
+                for (var i = 0; i < offsets.Length; i++)
                 {
-                    resultAddress = ReadMemoryIntPr(IntPtr.Add(resultAddress, offsets[i]));
-                    if (resultAddress.Equals(IntPtr.Zero))
+                    if (i < offsets.Length - 1)
                     {
-                        break;
+                        if (ReadMemoryIntPr(IntPtr.Add(resultAddress, offsets[i]), out resultAddress))
+                        {
+                            result = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        resultAddress = IntPtr.Add(resultAddress, offsets[i]);
                     }
                 }
-                else
-                {
-                    resultAddress = IntPtr.Add(resultAddress, offsets[i]);
-                }
             }
-            return resultAddress;
+            return result;
         }
 
 

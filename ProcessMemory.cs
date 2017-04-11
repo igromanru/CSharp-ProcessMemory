@@ -43,7 +43,7 @@ namespace IgroGadgets.Memory
         private IntPtr _handleProcess;
 
         public IntPtr BaseAddress { get; private set; }
-
+        
         public ProcessMemory(string processName)
         {
             try
@@ -55,6 +55,11 @@ namespace IgroGadgets.Memory
                 throw new NoAdminPrivilegesException();
             }
             OpenProcessByName(processName);
+        }
+
+        ~ProcessMemory()
+        {
+            Dispose();
         }
 
         private void OpenProcessByName(string processName)
@@ -76,48 +81,60 @@ namespace IgroGadgets.Memory
             return ReadProcessMemory(_handleProcess, readAddress, readBuffer, (UIntPtr)readBuffer.Length, UIntPtr.Zero);
         }
 
-        public int ReadMemoryByte(IntPtr address)
+        public bool ReadMemoryByte(IntPtr address, out byte value)
         {
-            int result = -1;
+            value = 0;
             var readBuffer = new byte[sizeof(byte)];
-            if (ReadProcessMemory(_handleProcess, address, readBuffer, (UIntPtr)1, UIntPtr.Zero))
+            var success = ReadProcessMemory(_handleProcess, address, readBuffer, (UIntPtr)1, UIntPtr.Zero);
+            if (success)
             {
-                result = BitConverter.ToInt32(readBuffer, 0);
+                value = readBuffer[0];
             }
-            return result;
+            return success;
         }
 
-        public int ReadMemoryInt(IntPtr address)
+        public bool ReadMemoryInt(IntPtr address, out int value)
         {
-            var result = -1;
+            value = 0;
             var readBuffer = new byte[sizeof(int)];
-            if (ReadMemory(address, ref readBuffer))
+            var success = ReadMemory(address, ref readBuffer);
+            if (success)
             {
-                result = BitConverter.ToInt32(readBuffer, 0);
+                value = BitConverter.ToInt32(readBuffer, 0);
             }
-            return result;
+            return success;
         }
 
-        public long ReadMemoryLong(IntPtr address)
+        public bool ReadMemoryLong(IntPtr address, out long value)
         {
-            long result = -1;
+            value = 0;
             var readBuffer = new byte[sizeof(long)];
-            if (ReadMemory(address, ref readBuffer))
+            var success = ReadMemory(address, ref readBuffer);
+            if (success)
             {
-                result = BitConverter.ToInt64(readBuffer, 0);
+                value = BitConverter.ToInt64(readBuffer, 0);
             }
-            return result;
+            return success;
         }
 
-        public float ReadMemoryFloat(IntPtr address)
+        public bool ReadMemoryFloat(IntPtr address, out float value)
         {
-            var readFloat = -1f;
-            var readBuffer = new byte[IntPtr.Size];
-            if (ReadMemory(address, ref readBuffer))
+            value = 0;
+            var readBuffer = new byte[sizeof(float)];
+            var success = ReadMemory(address, ref readBuffer);
+            if (success)
             {
-                readFloat = BitConverter.ToSingle(readBuffer, 0);
+                value = BitConverter.ToSingle(readBuffer, 0);
             }
-            return readFloat;
+            return success;
+        }
+
+        public IntPtr ReadMemoryIntPr(IntPtr address)
+        {
+            int intValue = 0;
+            long longValue = 0;
+            bool read = Is64Bit ? ReadMemoryLong(address,out longValue) : ReadMemoryInt(address, out intValue);
+            return new IntPtr(Is64Bit ? longValue : intValue);
         }
 
         public bool WriteMemory(IntPtr writeAddress, byte[] writeBuffer)
@@ -175,26 +192,25 @@ namespace IgroGadgets.Memory
         /// <returns>The address that is pointed to by the pointer.</returns>
         public IntPtr ReadPointer(IntPtr address, int[] offsets)
         {
-            var startAdsress = Is64Bit ? ReadMemoryLong(address) : ReadMemoryInt(address);
+            var resultAddress = ReadMemoryIntPr(address);
             for (var i = 0; i < offsets.Length; i++)
             {
                 if (i < offsets.Length - 1)
                 {
-                    startAdsress = Is64Bit ? ReadMemoryLong(new IntPtr(startAdsress + offsets[i]))
-                                            : ReadMemoryInt(new IntPtr(startAdsress + offsets[i]));
-                    if (startAdsress == -1)
+                    resultAddress = ReadMemoryIntPr(IntPtr.Add(resultAddress, offsets[i]));
+                    if (resultAddress.Equals(IntPtr.Zero))
                     {
                         break;
                     }
-
                 }
                 else
                 {
-                    startAdsress += offsets[i];
+                    resultAddress = IntPtr.Add(resultAddress, offsets[i]);
                 }
             }
-            return new IntPtr(startAdsress);
+            return resultAddress;
         }
+
 
         public void Dispose()
         {
@@ -203,6 +219,7 @@ namespace IgroGadgets.Memory
             {
                 CloseHandle(_handleProcess);
             }
+            GC.SuppressFinalize(this);
         }
     }
 }

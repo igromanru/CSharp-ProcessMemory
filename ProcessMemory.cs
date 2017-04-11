@@ -30,7 +30,7 @@ namespace IgroGadgets.Memory
         public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr dwSize, UIntPtr lpNumberOfBytesRead);
+        public static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out()] byte[] lpBuffer, UIntPtr dwSize, UIntPtr lpNumberOfBytesRead);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr dwSize, UIntPtr lpNumberOfBytesWritten);
@@ -64,17 +64,33 @@ namespace IgroGadgets.Memory
 
         private void OpenProcessByName(string processName)
         {
-            Process[] processes = Process.GetProcessesByName(processName);
-            if (processes.Length > 0)
+            try
             {
-                BaseAddress = processes[0].MainModule.BaseAddress;
+                Process[] processes = Process.GetProcessesByName(processName);
                 _handleProcess = OpenProcess((int)ProcessAccessType.PROCESS_ALL_ACCESS, false, processes[0].Id);
+                InitBaseAddress(processes[0]);
             }
-            else
+            catch (Exception e)
             {
+                Console.WriteLine(e);
                 throw new NoProcessFoundException();
             }
         }
+
+        private void InitBaseAddress(Process process)
+        {
+            try
+            {
+                BaseAddress = process.MainModule.BaseAddress;
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        }
+
+
 
         public bool ReadMemory(IntPtr readAddress, ref byte[] readBuffer)
         {

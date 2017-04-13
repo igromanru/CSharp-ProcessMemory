@@ -1,1 +1,1 @@
-My utilities classes to read and write memory from another processes.
+My utilities classes to read and write memory from another process.
